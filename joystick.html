@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Web Gamepad API 範例</title>
+</head>
+<body>
+	<h1>Web Gamepad API 範例</h1>
+	<div id="output"></div>
+
+	<script>
+		// 定義按鍵的描述
+		var buttonNames = [
+			"A",
+			"B",
+			"X",
+			"Y",
+			"L1",
+			"R1",
+			"L2",
+			"R2",
+			"Select",
+			"Start",
+			"L3",
+			"R3",
+			"D-Pad Up",
+			"D-Pad Down",
+			"D-Pad Left",
+			"D-Pad Right"
+		];
+
+		// 將所有按鍵先顯示在畫面上
+		var output = "";
+		output += "按鍵：<br>";
+		for (var j = 0; j < buttonNames.length; j++) {
+			output += "[" + buttonNames[j] + "：release]<br>";
+		}
+		output += "軸：<br>";
+		output += "[X 軸：0] [Y 軸：0] [Z 軸：0] [θ 軸：0] ";
+		output += "[PWM1：0] [PWM2：0] [PWM3：0] [PWM4：0]<br>";
+		document.getElementById("output").innerHTML = output;
+
+		// 檢查是否支援 Gamepad API
+		if (!navigator.getGamepads) {
+			document.getElementById("output").innerHTML = "瀏覽器不支援 Gamepad API";
+		} else {
+			window.addEventListener("gamepadconnected", function(e) {
+				console.log("Gamepad已連接");
+				console.log(e.gamepad);
+			});
+
+			window.addEventListener("gamepaddisconnected", function(e) {
+				console.log("Gamepad已斷線");
+			});
+
+			var buttonStates = [];
+			var pwmValues = [0, 0, 0, 0];
+
+			function update() {
+				var gamepads = navigator.getGamepads();
+				for (var i = 0; i < gamepads.length; i++) {
+					if (gamepads[i]) {
+						output = "";
+						output += "按鍵：<br>";
+						for (var j = 0; j < gamepads[i].buttons.length; j++) {
+							var buttonState = buttonStates[j] || "release";
+							if (buttonState == "release" && gamepads[i].buttons[j].pressed) {
+								buttonState = "press";
+							} else if (buttonState == "press" && !gamepads[i].buttons[j].pressed) {
+								buttonState = "release";
+							}
+							buttonStates[j] = buttonState;
+							output += "[" + buttonNames[j] + "：" + buttonState + "]<br>";
+						}
+						output += "軸：<br>";
+						output += "[X 軸：" + gamepads[i].axes[0].toFixed(4) + "] ";
+						output += "[Y 軸：" + gamepads[i].axes[1].toFixed(4) + "] ";
+output += "[Z 軸：" + gamepads[i].axes[2].toFixed(4) + "] ";
+output += "[θ 軸：" + (Math.abs(gamepads[i].axes[3]) < 0.1 ? "0" : (gamepads[i].axes[3] < 0 ? "-" : "") + "θ" + Math.abs(gamepads[i].axes[3]).toFixed(2)) + "] ";
+output += "[PWM1：" + pwmValues[0] + "] ";
+output += "[PWM2：" + pwmValues[1] + "] ";
+output += "[PWM3：" + pwmValues[2] + "] ";
+output += "[PWM4：" + pwmValues[3] + "]<br>";
+document.getElementById("output").innerHTML = output;
+					// 映射軸的值到 PWM
+					var minAxisValue = -1;
+					var maxAxisValue = 1;
+					var minPwmValue = 0;
+					var maxPwmValue = 255;
+					for (var k = 0; k < 4; k++) {
+						var axisValue = gamepads[i].axes[k];
+						var pwmValue = Math.round((axisValue - minAxisValue) / (maxAxisValue - minAxisValue) * (maxPwmValue - minPwmValue) + minPwmValue);
+						pwmValues[k] = pwmValue;
+					}
+				}
+			}
+			requestAnimationFrame(update);
+		}
+		requestAnimationFrame(update);
+	}
+</script>
+</body>
+</html>
